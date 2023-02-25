@@ -91,3 +91,16 @@ class EnhancedEditField(IAccessible):
 		response = requests.post(url, headers=headers, json=data).json()
 
 		return response['choices'][0]['text']
+
+
+'''
+Example input cases:
+今天天器真好，
+好想初去完，
+結數回家吃泛。
+Expected output:
+今天天氣真好，
+好想出去玩，
+結束回家吃飯。
+'''
+''
