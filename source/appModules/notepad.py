@@ -7,8 +7,15 @@
 While this app module also covers older Notepad releases,
 this module provides workarounds for Windows 11 Notepad."""
 
-import appModuleHandler
+from NVDAObjects.IAccessible import IAccessible
+from logHandler import log
+from scriptHandler import script
+
 import api
+import appModuleHandler
+import controlTypes
+import requests
+import ui
 
 
 class AppModule(appModuleHandler.AppModule):
@@ -40,3 +47,47 @@ class AppModule(appModuleHandler.AppModule):
 		if not any(statusBar.location):
 			raise NotImplementedError()
 		return statusBar
+
+	def chooseNVDAObjectOverlayClasses(self, obj, clsList):
+		if obj.windowClassName == "Edit" and obj.role == controlTypes.Role.EDITABLETEXT:
+			clsList.insert(0, EnhancedEditField)
+
+class EnhancedEditField(IAccessible):
+
+	@script(gesture="kb:NVDA+l")
+	def script_reportTypos(self, gesture):
+		ui.message(f"原文是: {self.value}")
+		text_corrected = self._get_openai_completion_response(self.value)
+		self._report_typos(self.value,
+						   text_corrected)
+
+	def _report_typos(self, text_original, text_corrected):
+		text_original_split = text_original.split('\r\n')
+		text_corrected_split = text_corrected.split('\n')
+		error_count = 0
+
+		ui.message(f"分析結果如下:")
+
+		for row in range(len(text_original_split)):
+			for col in range(len(text_original_split[row])):
+				if text_original_split[row][col] != text_corrected_split[row][col]:
+					ui.message(f"row {row + 1}, column {col + 1}: {text_original_split[row][col]} 應改成 {text_corrected_split[row][col]}")
+					error_count += 1
+
+		ui.message(f"共有錯字{error_count}個")
+
+	def _get_openai_completion_response(self, prompt_text):
+		prompt_augmented = f'改錯字\n\n題目:{prompt_text}\n\n答案:'
+
+		API_KEY = 'OPENAI_API_KEY'
+		url =  "https://api.openai.com/v1/completions"
+		headers = {"Authorization": f"Bearer {API_KEY}"}
+		data = {'model': 'text-davinci-003',
+				'prompt': prompt_augmented,
+				'max_tokens': 60,
+				'temperature': 0,
+				}
+
+		response = requests.post(url, headers=headers, json=data).json()
+
+		return response['choices'][0]['text']
