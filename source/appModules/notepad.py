@@ -59,7 +59,7 @@ class EnhancedEditField(IAccessible):
 		ui.message(f"原文是: {self.value}")
 		text_corrected = self._get_openai_completion_response(self.value)
 		self._report_typos(self.value,
-						   text_corrected)
+				   text_corrected)
 
 	def _report_typos(self, text_original, text_corrected):
 		text_original_split = text_original.split('\r\n')
@@ -83,10 +83,10 @@ class EnhancedEditField(IAccessible):
 		url =  "https://api.openai.com/v1/completions"
 		headers = {"Authorization": f"Bearer {API_KEY}"}
 		data = {'model': 'text-davinci-003',
-				'prompt': prompt_augmented,
-				'max_tokens': 60,
-				'temperature': 0,
-				}
+			'prompt': prompt_augmented,
+			'max_tokens': 60,
+			'temperature': 0,
+			}
 
 		response = requests.post(url, headers=headers, json=data).json()
 
